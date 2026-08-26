@@ -1,0 +1,16 @@
+{
+	"name": "flash-sale-stock-guard-for-woocommerce",
+	"version": "1.0.0",
+	"description": "Stop overselling during flash sales and limited drops. Locks stock at add-to-cart on the products you choose, with an optional countdown.",
+	"main": "assets/build/index.js",
+	"scripts": {
+		"build": "wp-scripts build --webpack-src-dir=assets/src --output-path=assets/build",
+		"start": "wp-scripts start --webpack-src-dir=assets/src --output-path=assets/build",
+		"test:e2e": "playwright test"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^27.0.0",
+		"@playwright/test": "^1.47.0",
+		"@wordpress/e2e-test-utils-playwright": "^1.4.0"
+	}
+}

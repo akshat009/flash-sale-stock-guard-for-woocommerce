@@ -1,0 +1,122 @@
+name: CI Workflow
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  phpcs:
+    name: Code Sniffer & Validation (PHPCS)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Validate Composer JSON
+        run: composer validate --strict
+
+      - name: Install Composer Dependencies
+        # composer install can fail transiently (a network blip against
+        # packagist, or a runner-side file-lock hiccup mid-extraction) —
+        # retry a few times with a short backoff before failing the job.
+        run: |
+          n=0
+          until composer install --prefer-dist --no-progress --no-interaction; do
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then
+              echo "composer install failed after 3 attempts" >&2
+              exit 1
+            fi
+            echo "composer install failed (attempt $n/3) — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Run PHPCS
+        run: composer lint
+
+  phpunit:
+    name: PHPUnit Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4','8.0','8.1','8.2','8.3']
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer Dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer Dependencies
+        # composer install can fail transiently (a network blip against
+        # packagist, or a runner-side file-lock hiccup mid-extraction) —
+        # retry a few times with a short backoff before failing the job.
+        run: |
+          n=0
+          until composer install --prefer-dist --no-progress --no-interaction; do
+            n=$((n+1))
+            if [ "$n" -ge 3 ]; then
+              echo "composer install failed after 3 attempts" >&2
+              exit 1
+            fi
+            echo "composer install failed (attempt $n/3) — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Run PHPUnit
+        run: composer test
+
+  node-build:
+    name: Build JS Assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node Dependencies
+        run: npm install
+
+      - name: Build Assets
+        run: npm run build

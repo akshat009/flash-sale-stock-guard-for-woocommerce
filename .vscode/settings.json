@@ -1,0 +1,8 @@
+{
+	"intelephense.environment.includePaths": [
+		"vendor/php-stubs/wordpress-stubs/wordpress-stubs.php",
+		"vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php"
+	],
+	"phpsab.executablePathCS": "vendor/bin/phpcs",
+	"phpsab.executablePathCBF": "vendor/bin/phpcbf"
+}

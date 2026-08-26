@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<ruleset name="Flash Sale Stock Guard for WooCommerce Coding Standards">
+	<description>WPCS ruleset for Flash Sale Stock Guard for WooCommerce.</description>
+
+	<file>./flash-sale-stock-guard-for-woocommerce.php</file>
+	<file>./src</file>
+	<file>./tests</file>
+	<file>./uninstall.php</file>
+
+	<exclude-pattern>/vendor/</exclude-pattern>
+	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/assets/build/</exclude-pattern>
+
+	<arg value="sp"/>
+	<arg name="colors"/>
+	<arg name="extensions" value="php"/>
+
+	<rule ref="WordPress-Extra">
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+		<exclude name="Generic.Formatting.MultipleStatementAlignment"/>
+	</rule>
+	<rule ref="WordPress-Docs"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<config name="minimum_supported_wp_version" value="6.4"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<rule ref="Squiz.Commenting.FileComment">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.ClassComment">
+		<exclude-pattern>/tests/</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>/tests/</exclude-pattern>
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="fssgw"/>
+				<element value="fssgw_"/>
+				<element value="FSSGW"/>
+				<element value="FSSGW_"/>
+				<element value="FlashSaleStockGuardWooCommerce"/>
+			</property>
+		</properties>
+	</rule>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="flash-sale-stock-guard-for-woocommerce"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
