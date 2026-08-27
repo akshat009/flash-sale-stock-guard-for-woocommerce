@@ -6,3 +6,4 @@ assets/build/
 *.log
 .DS_Store
 Thumbs.db
+/*.zip
