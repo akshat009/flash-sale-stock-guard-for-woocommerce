@@ -45,6 +45,10 @@ Concrete widget classes placed in `src/Widgets/` are automatically discovered:
   - bash / zsh: `export WP_TESTS_DB_NAME=wp_tests WP_TESTS_DB_USER=root WP_TESTS_DB_PASSWORD=root`
   - PowerShell: `$env:WP_TESTS_DB_NAME="wp_tests"; $env:WP_TESTS_DB_USER="root"; $env:WP_TESTS_DB_PASSWORD="root"`
   - cmd.exe: `set WP_TESTS_DB_NAME=wp_tests && set WP_TESTS_DB_USER=root && set WP_TESTS_DB_PASSWORD=root`
+
+  These variables alone aren't enough on every machine — two things they don't handle:
+  - **The database must already exist.** `wp-phpunit` installs WordPress into it, it doesn't create it. Run `mysqladmin create wp_tests -u root -p<password>` (or the equivalent for your DB client) once, first.
+  - **`localhost` doesn't always mean TCP.** On some setups (notably Docker/CI containers) it resolves to a Unix socket instead of the network address, and the connection fails even with correct credentials. If that happens, set `WP_TESTS_DB_HOST=127.0.0.1` instead — this is exactly why [`.github/workflows/ci.yml`](.github/workflows/ci.yml) uses `127.0.0.1` for its MySQL service rather than `localhost`.
 - `npm run build` — Build JS assets for production.
 - `npm run start` — Start JS asset dev server in watch mode.
 - `npm run test:e2e` — Run Playwright E2E tests against a running WordPress site (`WP_BASE_URL`, defaults to `http://localhost:8889` — e.g. `wp-env start`). See [tests/e2e/README.md](tests/e2e/README.md) for setup and how to add specs.
