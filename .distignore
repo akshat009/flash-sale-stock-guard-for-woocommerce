@@ -18,4 +18,5 @@ phpunit-integration.xml.dist
 playwright.config.js
 README.md
 .wordpress-org
+languages/.gitkeep
 *.log
