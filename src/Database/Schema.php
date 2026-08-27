@@ -19,13 +19,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Schema.
  *
- * Owns the plugin's custom table. dbDelta() creates or upgrades it — called
+ * Owns the holds table. dbDelta() creates or upgrades it — called
  * synchronously on activation (Activator resolves this from the container),
  * and again on every request via maybe_upgrade() so a plugin *update*
  * (which doesn't fire register_activation_hook()) still gets migrated.
  * dbDelta() is idempotent: re-running it against an up-to-date table is a
  * cheap no-op, it only ever adds/alters, and get_option() short-circuits
  * maybe_upgrade() once VERSION_OPTION already matches VERSION.
+ *
+ * Holds live here rather than in post meta for three reasons: row-level
+ * locking on wp_postmeta would lock rows in the site's busiest shared table;
+ * expiry can't be indexed inside serialized meta values; and concurrent
+ * writes to a serialized array of holds silently lose entries — the exact
+ * bug this plugin exists to prevent.
  */
 class Schema implements Service_Provider {
 
@@ -46,13 +52,13 @@ class Schema implements Service_Provider {
 	private const VERSION_OPTION = 'fssgw_db_version';
 
 	/**
-	 * Get the custom table's fully-qualified name (respects multisite table prefixing).
+	 * Get the holds table's fully-qualified name (respects multisite table prefixing).
 	 *
 	 * @return string
 	 */
 	public static function table_name(): string {
 		global $wpdb;
-		return $wpdb->prefix . 'fssgw_items';
+		return $wpdb->prefix . 'fssgw_holds';
 	}
 
 	/**
@@ -90,7 +96,11 @@ class Schema implements Service_Provider {
 	}
 
 	/**
-	 * Create (or, via dbDelta()'s diffing, migrate) the custom table.
+	 * Create (or, via dbDelta()'s diffing, migrate) the holds table.
+	 *
+	 * Indexes: (product_id, variation_id, status) covers the availability
+	 * lookup that runs on every add-to-cart; expires_at covers the cron
+	 * sweep; session_id and user_id cover the per-customer countdown query.
 	 *
 	 * @return void
 	 */
@@ -106,11 +116,21 @@ class Schema implements Service_Provider {
 		// each field/index on its own line, no trailing comma on the last one.
 		$sql = "CREATE TABLE {$table_name} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			name VARCHAR(191) NOT NULL,
+			product_id BIGINT UNSIGNED NOT NULL,
+			variation_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			session_id VARCHAR(64) NOT NULL DEFAULT '',
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			quantity INT UNSIGNED NOT NULL DEFAULT 1,
 			status VARCHAR(20) NOT NULL DEFAULT 'active',
+			order_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			expires_at DATETIME NOT NULL,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
-			KEY status (status)
+			KEY product_status (product_id, variation_id, status),
+			KEY expires_at (expires_at),
+			KEY session_id (session_id),
+			KEY user_id (user_id)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -119,7 +139,7 @@ class Schema implements Service_Provider {
 	}
 
 	/**
-	 * Drop the custom table. Called from uninstall.php.
+	 * Drop the holds table. Called from uninstall.php.
 	 *
 	 * @return void
 	 */

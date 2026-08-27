@@ -103,20 +103,42 @@ jobs:
       - name: Run PHPUnit
         run: composer test
 
-  node-build:
-    name: Build JS Assets
+  integration:
+    name: Integration Tests (WordPress + MySQL)
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: wp_tests
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          node-version: '20'
+          php-version: '8.2'
+          tools: composer
+          coverage: none
 
-      - name: Install Node Dependencies
-        run: npm install
+      - name: Install Composer Dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Build Assets
-        run: npm run build
+      - name: Run Integration Tests
+        env:
+          WP_TESTS_DB_NAME: wp_tests
+          WP_TESTS_DB_USER: root
+          WP_TESTS_DB_PASSWORD: ''
+          WP_TESTS_DB_HOST: 127.0.0.1
+        run: composer test:integration

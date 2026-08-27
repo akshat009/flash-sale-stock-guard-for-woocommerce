@@ -1,6 +1,6 @@
 <?php
 /**
- * REST API Controller.
+ * REST endpoint powering the cart countdown.
  *
  * @package FlashSaleStockGuardWooCommerce\Rest
  */
@@ -11,6 +11,7 @@ namespace FlashSaleStockGuardWooCommerce\Rest;
 
 use FlashSaleStockGuardWooCommerce\Contracts\Service_Provider;
 use FlashSaleStockGuardWooCommerce\Core\Container;
+use FlashSaleStockGuardWooCommerce\Database\Hold_Repository;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -18,22 +19,45 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Class Rest_Controller.
+ *
+ * Read-only. Returns the seconds remaining on the current cart's earliest
+ * hold, so the frontend timer stays honest across tabs and page reloads
+ * instead of counting down from a value baked into the HTML.
  */
-class Rest_Controller extends \WP_REST_Controller implements Service_Provider {
+class Rest_Controller implements Service_Provider {
+
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
+	public const NAMESPACE_V1 = 'fssgw/v1';
+
+	/**
+	 * Route path.
+	 *
+	 * @var string
+	 */
+	public const ROUTE = '/hold-status';
+
+	/**
+	 * Hold data access.
+	 *
+	 * @var Hold_Repository
+	 */
+	private Hold_Repository $repository;
 
 	/**
 	 * Constructor.
 	 *
-	 * WP_REST_Controller declares $namespace/$rest_base with no default
-	 * values and no constructor of its own — set both here.
+	 * @param Hold_Repository|null $repository Injected for testing.
 	 */
-	public function __construct() {
-		$this->namespace = 'fssgw/v1';
-		$this->rest_base = 'data';
+	public function __construct( ?Hold_Repository $repository = null ) {
+		$this->repository = $repository ?? new Hold_Repository();
 	}
 
 	/**
-	 * No bindings needed.
+	 * No container bindings needed.
 	 *
 	 * @param Container $container Application container.
 	 * @return void
@@ -42,7 +66,7 @@ class Rest_Controller extends \WP_REST_Controller implements Service_Provider {
 	}
 
 	/**
-	 * Register hooks.
+	 * Register REST routes.
 	 *
 	 * @param Container $container Application container.
 	 * @return void
@@ -52,55 +76,64 @@ class Rest_Controller extends \WP_REST_Controller implements Service_Provider {
 	}
 
 	/**
-	 * Register API endpoints.
+	 * Register the status route.
 	 *
 	 * @return void
 	 */
-	public function register_routes() {
+	public function register_routes(): void {
 		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base,
+			self::NAMESPACE_V1,
+			self::ROUTE,
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_items' ),
-				'permission_callback' => array( $this, 'get_items_permissions_check' ),
-				'args'                => array(
-					'param' => array(
-						'required'          => false,
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => function ( $param ) {
-							return is_string( $param );
-						},
-					),
-				),
+				'callback'            => array( $this, 'get_status' ),
+				'permission_callback' => '__return_true',
 			)
 		);
 	}
 
 	/**
-	 * Check permission for endpoint access.
+	 * Seconds remaining on the earliest-expiring active hold.
 	 *
-	 * @param \WP_REST_Request $request REST request object.
-	 * @return bool|\WP_Error
+	 * @return \WP_REST_Response
 	 */
-	public function get_items_permissions_check( $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-		// Public endpoint. Replace with current_user_can() check if restricted access is required.
-		return true;
-	}
+	public function get_status(): \WP_REST_Response {
+		if ( ! function_exists( 'WC' ) ) {
+			return new \WP_REST_Response( array( 'active' => false ), 200 );
+		}
 
-	/**
-	 * Handle GET request for items.
-	 *
-	 * @param \WP_REST_Request $request REST request object.
-	 * @return \WP_REST_Response|\WP_Error
-	 */
-	public function get_items( $request ) {
-		$param = $request->get_param( 'param' );
-		$data  = array(
-			'message' => __( 'Hello from Flash Sale Stock Guard for WooCommerce REST API', 'flash-sale-stock-guard-for-woocommerce' ),
-			'param'   => ! empty( $param ) ? sanitize_text_field( (string) $param ) : null,
+		// WooCommerce doesn't boot the session for arbitrary REST routes. Only
+		// the session is needed here — deliberately not wc_load_cart(), which
+		// also constructs WC()->cart. That cart loads its contents on the
+		// `wp_loaded` hook, already past by the time a REST route runs, so it
+		// stays empty — and WooCommerce then "cleans up" what looks like an
+		// abandoned cart by deleting the visitor's real session and cart
+		// cookies out from under them.
+		if ( ! WC()->session ) {
+			if ( ! class_exists( 'WC_Session_Handler' ) ) {
+				return new \WP_REST_Response( array( 'active' => false ), 200 );
+			}
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce's own filter, not one of ours.
+			$session_class = apply_filters( 'woocommerce_session_handler', 'WC_Session_Handler' );
+			WC()->session  = new $session_class();
+			WC()->session->init();
+		}
+
+		$seconds = $this->repository->get_seconds_remaining(
+			(string) WC()->session->get_customer_id()
 		);
 
-		return rest_ensure_response( $data );
+		if ( null === $seconds ) {
+			return new \WP_REST_Response( array( 'active' => false ), 200 );
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'active'  => true,
+				'seconds' => $seconds,
+			),
+			200
+		);
 	}
 }

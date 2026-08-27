@@ -52,7 +52,7 @@ final class Plugin {
 
 	/**
 	 * Build the real Plugin for this request: a fresh Container plus every
-	 * selected module's provider.
+	 * provider the plugin needs.
 	 *
 	 * @return self
 	 */
@@ -64,23 +64,19 @@ final class Plugin {
 			$providers[] = new CLI\Commands();
 		}
 
+		$providers[] = new Database\Schema();
+
 		$providers[] = new Admin\Settings_Registrar();
 
 		$providers[] = new Rest\Rest_Controller();
 
 		$providers[] = new Cron\Scheduler();
 
-		$providers[] = new Database\Schema();
+		$providers[] = new Woo\Product_Setting();
 
-		$providers[] = new Woo\Providers\Gateway_Provider();
+		$providers[] = new Woo\Cart_Integration();
 
-		$providers[] = new Woo\Providers\Shipping_Provider();
-
-		$providers[] = new Woo\Providers\Email_Provider();
-
-		$providers[] = new Woo\Providers\Product_Type_Provider();
-
-		$providers[] = new Woo\Providers\Blocks_Provider();
+		$providers[] = new Frontend\Cart_Timer();
 
 		return new self( $container, $providers );
 	}

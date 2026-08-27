@@ -2,6 +2,15 @@
 
 Stop overselling during flash sales and limited drops. Locks stock at add-to-cart on the products you choose, with an optional countdown.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Settings screen under WooCommerce → Stock Guard](.wordpress-org/screenshot-1.png) | ![The "Always guard this item" checkbox on a product's Inventory tab](.wordpress-org/screenshot-2.png) |
+| Settings — WooCommerce → Stock Guard | Per-product guard checkbox (Inventory tab) |
+| ![Live countdown on the cart page](.wordpress-org/screenshot-3.png) | ![Live countdown on the checkout page](.wordpress-org/screenshot-4.png) |
+| Live countdown — cart page | Live countdown — checkout page |
+
 ## Requirements
 - PHP 7.4+
 - WordPress 6.4+
@@ -38,4 +47,4 @@ Concrete widget classes placed in `src/Widgets/` are automatically discovered:
   - cmd.exe: `set WP_TESTS_DB_NAME=wp_tests && set WP_TESTS_DB_USER=root && set WP_TESTS_DB_PASSWORD=root`
 - `npm run build` — Build JS assets for production.
 - `npm run start` — Start JS asset dev server in watch mode.
-- `npm run test:e2e` — Run Playwright E2E tests against a running WordPress site (`WP_BASE_URL`, defaults to `http://localhost:8889` — e.g. `wp-env start`).
+- `npm run test:e2e` — Run Playwright E2E tests against a running WordPress site (`WP_BASE_URL`, defaults to `http://localhost:8889` — e.g. `wp-env start`). See [tests/e2e/README.md](tests/e2e/README.md) for setup and how to add specs.

@@ -25,8 +25,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Settings_Registrar implements Service_Provider {
 
 	/**
+	 * Menu slug and Settings API page identifier.
+	 *
+	 * @var string
+	 */
+	public const PAGE_SLUG = 'flash-sale-stock-guard-for-woocommerce';
+
+	/**
+	 * Settings section identifier.
+	 *
+	 * @var string
+	 */
+	private const SECTION = 'fssgw_main_section';
+
+	/**
 	 * Application container, kept for on-demand Settings_Repository lookups
-	 * from inside WordPress-invoked callbacks (add_options_page() and
+	 * from inside WordPress-invoked callbacks (add_submenu_page() and
 	 * add_settings_field() call these with fixed signatures, so the
 	 * repository can't be a constructor argument here).
 	 *
@@ -58,16 +72,18 @@ class Settings_Registrar implements Service_Provider {
 	}
 
 	/**
-	 * Add admin menu page.
+	 * Add the page under WooCommerce rather than Settings — store owners look
+	 * for store features there.
 	 *
 	 * @return void
 	 */
 	public function add_menu_page() {
-		add_options_page(
-			__( 'Flash Sale Stock Guard for WooCommerce Settings', 'flash-sale-stock-guard-for-woocommerce' ),
-			__( 'Flash Sale Stock Guard for WooCommerce', 'flash-sale-stock-guard-for-woocommerce' ),
-			'manage_options',
-			'flash-sale-stock-guard-for-woocommerce',
+		add_submenu_page(
+			'woocommerce',
+			__( 'Stock Guard', 'flash-sale-stock-guard-for-woocommerce' ),
+			__( 'Stock Guard', 'flash-sale-stock-guard-for-woocommerce' ),
+			'manage_woocommerce',
+			self::PAGE_SLUG,
 			array( $this, 'render_page' )
 		);
 	}
@@ -82,32 +98,130 @@ class Settings_Registrar implements Service_Provider {
 		$repository->register_setting();
 
 		add_settings_section(
-			'fssgw_main_section',
-			__( 'General Settings', 'flash-sale-stock-guard-for-woocommerce' ),
-			null,
-			'flash-sale-stock-guard-for-woocommerce'
+			self::SECTION,
+			__( 'Stock Guard Settings', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_section_intro' ),
+			self::PAGE_SLUG
 		);
 
 		add_settings_field(
-			$repository->get_option_name(),
-			__( 'Sample Setting', 'flash-sale-stock-guard-for-woocommerce' ),
-			array( $this, 'render_sample_field' ),
-			'flash-sale-stock-guard-for-woocommerce',
-			'fssgw_main_section'
+			Settings_Repository::OPT_ENABLED,
+			__( 'Enable stock guard', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_enabled_field' ),
+			self::PAGE_SLUG,
+			self::SECTION
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_APPLY_TO,
+			__( 'Apply stock guard to', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_apply_to_field' ),
+			self::PAGE_SLUG,
+			self::SECTION
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_TTL,
+			__( 'Hold stock for', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_ttl_field' ),
+			self::PAGE_SLUG,
+			self::SECTION
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_SHOW_TIMER,
+			__( 'Show countdown in cart', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_show_timer_field' ),
+			self::PAGE_SLUG,
+			self::SECTION
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_DELETE_ON_UNINSTALL,
+			__( 'Delete data on uninstall', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_delete_field' ),
+			self::PAGE_SLUG,
+			self::SECTION
 		);
 	}
 
 	/**
-	 * Render sample setting field input.
+	 * Render the section intro.
 	 *
 	 * @return void
 	 */
-	public function render_sample_field() {
-		$repository = $this->container->get( Settings_Repository::class );
-		$name       = $repository->get_option_name();
-		$value      = $repository->get_value();
+	public function render_section_intro() {
+		include FSSGW_PATH . 'src/Admin/views/section-intro.php';
+	}
 
-		include FSSGW_PATH . 'src/Admin/views/sample-field.php';
+	/**
+	 * Render the master switch.
+	 *
+	 * @return void
+	 */
+	public function render_enabled_field() {
+		$name        = Settings_Repository::OPT_ENABLED;
+		$checked     = $this->container->get( Settings_Repository::class )->is_enabled();
+		$label       = __( 'Hold stock for a customer as soon as they add a guarded item to their cart', 'flash-sale-stock-guard-for-woocommerce' );
+		$description = __( 'Turning this off returns the store to WooCommerce default behaviour, where stock is only reduced once an order is placed.', 'flash-sale-stock-guard-for-woocommerce' );
+
+		include FSSGW_PATH . 'src/Admin/views/checkbox-field.php';
+	}
+
+	/**
+	 * Render the apply-to mode selector.
+	 *
+	 * @return void
+	 */
+	public function render_apply_to_field() {
+		$repository = $this->container->get( Settings_Repository::class );
+
+		$name           = Settings_Repository::OPT_APPLY_TO;
+		$current        = $repository->get_apply_to();
+		$threshold_name = Settings_Repository::OPT_LOW_STOCK;
+		$threshold      = $repository->get_low_stock_threshold();
+
+		include FSSGW_PATH . 'src/Admin/views/apply-to-field.php';
+	}
+
+	/**
+	 * Render the hold duration field.
+	 *
+	 * @return void
+	 */
+	public function render_ttl_field() {
+		$name    = Settings_Repository::OPT_TTL;
+		$minutes = $this->container->get( Settings_Repository::class )->get_ttl_minutes();
+
+		include FSSGW_PATH . 'src/Admin/views/ttl-field.php';
+	}
+
+	/**
+	 * Render the countdown visibility switch.
+	 *
+	 * @return void
+	 */
+	public function render_show_timer_field() {
+		$name        = Settings_Repository::OPT_SHOW_TIMER;
+		$checked     = $this->container->get( Settings_Repository::class )->shows_timer();
+		$label       = __( 'Show customers how long their items are held for', 'flash-sale-stock-guard-for-woocommerce' );
+		$description = __( 'Display only. Turning this off does not affect the hold — stock is still guarded and still expires on schedule.', 'flash-sale-stock-guard-for-woocommerce' );
+
+		include FSSGW_PATH . 'src/Admin/views/checkbox-field.php';
+	}
+
+	/**
+	 * Render the destructive-uninstall opt-in.
+	 *
+	 * @return void
+	 */
+	public function render_delete_field() {
+		$name        = Settings_Repository::OPT_DELETE_ON_UNINSTALL;
+		$checked     = $this->container->get( Settings_Repository::class )->deletes_data_on_uninstall();
+		$label       = __( 'Drop the holds table when the plugin is deleted', 'flash-sale-stock-guard-for-woocommerce' );
+		$description = '';
+
+		include FSSGW_PATH . 'src/Admin/views/checkbox-field.php';
 	}
 
 	/**
@@ -116,7 +230,7 @@ class Settings_Registrar implements Service_Provider {
 	 * @return void
 	 */
 	public function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'flash-sale-stock-guard-for-woocommerce' ) );
 		}
 
