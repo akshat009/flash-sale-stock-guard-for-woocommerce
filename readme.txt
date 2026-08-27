@@ -46,7 +46,10 @@ Stock holds like this are usually locked behind premium inventory or checkout ad
 * `fssgw_is_product_guarded` filter — decide guarding programmatically, by category, campaign, or anything the settings screen doesn't cover.
 * `fssgw_release_statuses` filter — control which order statuses release a converted hold.
 * `fssgw_providers` filter — register additional service providers without touching plugin files.
-* WP-CLI: `wp fssgw status` and `wp fssgw cache clear`.
+* `fssgw_holds_expired` action — fires after each cron expiry sweep, for logging or metrics.
+* WP-CLI: `wp fssgw status`.
+
+See the plugin's [GitHub README](https://github.com/akshat009/flash-sale-stock-guard-for-woocommerce#filters--actions) for parameters and code examples for each hook.
 
 == Installation ==
 

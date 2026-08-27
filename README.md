@@ -27,6 +27,88 @@ This plugin uses a modular composition root: `Plugin::create()` builds a `FlashS
 - A provider can optionally implement `FlashSaleStockGuardWooCommerce\Contracts\Conditional` to self-exclude (e.g. only run when a required plugin is active).
 - Additional providers can be injected without modifying core files using the `fssgw_providers` WordPress filter.
 
+## Filters & Actions
+
+Everything below is a stable extension point — safe to build on without patching plugin files. Add these to a theme's `functions.php`, a site-specific plugin, or a custom provider registered via `fssgw_providers`.
+
+### `fssgw_hold_ttl`
+Change how long a hold lasts, globally or for a specific product/variation. Runs every time a hold is (re)created.
+
+```php
+apply_filters( 'fssgw_hold_ttl', int $ttl_seconds, int $product_id, int $variation_id ): int
+```
+
+```php
+// Give one high-demand product a shorter hold than the store default.
+add_filter( 'fssgw_hold_ttl', function ( $ttl, $product_id, $variation_id ) {
+	if ( 1234 === $product_id ) {
+		return 5 * MINUTE_IN_SECONDS;
+	}
+	return $ttl;
+}, 10, 3 );
+```
+
+### `fssgw_is_product_guarded`
+Decide guarding by anything the settings screen doesn't cover — category, tag, a campaign flag, a custom field. Runs on top of (not instead of) the store-wide mode and the per-product checkbox; returning `true` here guards a product even if both of those say no.
+
+```php
+apply_filters( 'fssgw_is_product_guarded', bool $guarded, int $product_id, int $variation_id ): bool
+```
+
+```php
+// Guard every product in the "Limited Drop" category, regardless of stock level.
+add_filter( 'fssgw_is_product_guarded', function ( $guarded, $product_id ) {
+	if ( has_term( 'limited-drop', 'product_cat', $product_id ) ) {
+		return true;
+	}
+	return $guarded;
+}, 10, 2 );
+```
+
+### `fssgw_release_statuses`
+Control which order statuses release a converted (order-backed) hold back to stock. Defaults to `cancelled`, `failed`, `refunded`.
+
+```php
+apply_filters( 'fssgw_release_statuses', array $statuses ): array
+```
+
+```php
+// Also free the stock the moment an order is put on hold.
+add_filter( 'fssgw_release_statuses', function ( $statuses ) {
+	$statuses[] = 'on-hold';
+	return $statuses;
+} );
+```
+
+### `fssgw_providers`
+Register your own `Service_Provider` alongside the plugin's built-in ones — it gets the same `register()`/`boot()` lifecycle, without editing `Plugin.php`.
+
+```php
+apply_filters( 'fssgw_providers', array $providers ): array
+```
+
+```php
+add_filter( 'fssgw_providers', function ( $providers ) {
+	$providers[] = new My_Site\Stock_Guard_Slack_Notifier();
+	return $providers;
+} );
+```
+
+### `fssgw_holds_expired`
+Fires once per cron sweep (roughly every 5 minutes) after lapsed holds are marked expired — a hook for logging or metrics, not for correctness (availability is already enforced at query time, so a missed sweep never causes overselling).
+
+```php
+do_action( 'fssgw_holds_expired', int $expired_count )
+```
+
+```php
+add_action( 'fssgw_holds_expired', function ( $expired_count ) {
+	if ( $expired_count > 0 ) {
+		error_log( "Stock Guard: released {$expired_count} lapsed hold(s)." );
+	}
+} );
+```
+
 ## WP-CLI Commands
 - `wp fssgw status` — Display plugin version and cache backend.
 
