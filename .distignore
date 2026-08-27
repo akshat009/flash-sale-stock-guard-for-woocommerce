@@ -18,5 +18,9 @@ phpunit-integration.xml.dist
 playwright.config.js
 README.md
 .wordpress-org
+artifacts
 languages/.gitkeep
 *.log
+*.zip
+.phpunit.result.cache
+.phpunit.cache

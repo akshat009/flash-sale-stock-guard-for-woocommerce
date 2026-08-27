@@ -24,7 +24,7 @@ Stock holds like this are usually locked behind premium inventory or checkout ad
 * **Hold on add-to-cart.** Adding a guarded item reserves that quantity immediately, before checkout even starts.
 * **Race-condition safe.** When two shoppers fight over the last unit at the same instant, a database-level lock scoped to that exact product decides it — not a stock check that was already stale by the time it ran.
 * **Automatic expiry.** Holds release themselves after a duration you set (1 minute to 24 hours) — long enough to check out, short enough that an abandoned cart doesn't sit on your inventory.
-* **Silent re-validation before payment.** If a hold has lapsed by the time a shopper reaches checkout, the plugin quietly tries to re-secure it first rather than immediately showing a "this item is no longer available" error — a real hold-up, not a fussy one.
+* **A clear hand-off when a hold expires.** When the countdown reaches zero the released item is removed from the shopper's cart and a short pop-up explains that the reservation lapsed, with a button back to the shop — the pattern ticketing and limited-drop sites use, instead of leaving a stale cart behind.
 * **Order-aware.** A completed order converts the hold so it stops expiring; a cancelled, failed, or refunded order releases it back to stock.
 
 = Choose what gets guarded =
@@ -37,7 +37,7 @@ Stock holds like this are usually locked behind premium inventory or checkout ad
 = Built for how customers actually shop =
 
 * Works on both the classic shortcode-based Cart/Checkout **and** the block-based Cart/Checkout — no separate setup for either.
-* An optional live countdown on the cart and checkout pages tells shoppers exactly how long their hold is good for, and refreshes automatically if it lapses — no guessing, no surprise "sold out" at the final step.
+* An optional live countdown on the cart and checkout pages tells shoppers exactly how long their hold is good for. When it reaches zero it becomes a pop-up — background, text, and button colours and text size all set from the settings screen — that sends them back to the shop to start again.
 * Turn the countdown off entirely and the stock protection still runs invisibly in the background.
 
 = For developers =
@@ -56,7 +56,7 @@ See the plugin's [GitHub README](https://github.com/akshat009/flash-sale-stock-g
 1. Make sure WooCommerce is installed and active — this plugin requires it.
 2. Upload the plugin files to `/wp-content/plugins/flash-sale-stock-guard-for-woocommerce`, or install it through the WordPress plugins screen directly.
 3. Activate the plugin through the 'Plugins' screen in WordPress.
-4. Go to **WooCommerce → Stock Guard** to choose which products are guarded, set the hold duration, and turn the countdown on or off.
+4. Go to **WooCommerce → Stock Guard** to choose which products are guarded, set the hold duration, turn the countdown on or off, and style the expiry pop-up.
 
 == Frequently Asked Questions ==
 
@@ -74,7 +74,7 @@ Yes. It has no purpose without it, and won't do anything if WooCommerce isn't ac
 
 = What happens when a customer's hold expires? =
 
-The held quantity is released back to available stock automatically. If they're still shopping, adding the item again (or revisiting checkout) tries to re-secure it — they only see an error if the stock has genuinely been taken by someone else in the meantime.
+The held quantity is released back to available stock automatically, and the item is removed from that shopper's cart. On the cart or checkout page the countdown turns into a pop-up telling them the reservation lapsed, with a button back to the shop. If the item is still in stock, adding it again starts a fresh hold.
 
 = Does this work with variable products? =
 
@@ -92,6 +92,10 @@ Yes, alongside the classic shortcode-based versions.
 
 Yes — the countdown display and the hold logic are controlled by separate settings.
 
+= Can I change how the expiry pop-up looks? =
+
+Yes. **WooCommerce → Stock Guard → Expiry popup** sets its background colour, text colour, button colours, and text size. The wording and the "back to shop" destination are fixed.
+
 = Will uninstalling the plugin delete my data? =
 
 Not by default. Your guard settings and per-product overrides stay in the database in case you reinstall. Data is only wiped if you tick "Delete data on uninstall" in the settings screen first.
@@ -102,6 +106,7 @@ Not by default. Your guard settings and per-product overrides stay in the databa
 2. The "Always guard this item" checkbox on a product's Inventory tab.
 3. Live countdown shown on the cart page.
 4. Live countdown shown on the checkout page.
+5. The pop-up shown on the cart or checkout page when a reservation expires.
 
 == Changelog ==
 

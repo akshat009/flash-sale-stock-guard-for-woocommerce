@@ -10,6 +10,8 @@ Stop overselling during flash sales and limited drops. Locks stock at add-to-car
 | Settings — WooCommerce → Stock Guard | Per-product guard checkbox (Inventory tab) |
 | ![Live countdown on the cart page](.wordpress-org/screenshot-3.png) | ![Live countdown on the checkout page](.wordpress-org/screenshot-4.png) |
 | Live countdown — cart page | Live countdown — checkout page |
+| ![Expiry pop-up shown when a reservation is released](.wordpress-org/screenshot-5.png) | |
+| Expiry pop-up — reservation released | |
 
 ## Requirements
 - PHP 7.4+

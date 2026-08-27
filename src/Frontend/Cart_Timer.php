@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace FlashSaleStockGuardWooCommerce\Frontend;
 
+use FlashSaleStockGuardWooCommerce\Admin\Settings_Repository;
 use FlashSaleStockGuardWooCommerce\Contracts\Service_Provider;
 use FlashSaleStockGuardWooCommerce\Core\Container;
 
@@ -65,18 +66,42 @@ class Cart_Timer implements Service_Provider {
 			true
 		);
 
+		$settings = new Settings_Repository();
+
 		wp_localize_script(
 			'fssgw-cart-timer',
 			'fssgwCartTimer',
 			array(
 				'endpoint' => rest_url( 'fssgw/v1/hold-status' ),
+				'shopUrl'  => $this->shop_url(),
+				'modal'    => array(
+					'background'  => $settings->get_expiry_bg_color(),
+					'textColor'   => $settings->get_expiry_text_color(),
+					'buttonBg'    => $settings->get_expiry_button_bg(),
+					'buttonColor' => $settings->get_expiry_button_color(),
+					'fontSize'    => $settings->get_expiry_font_size(),
+				),
 				'i18n'     => array(
 					/* translators: %s: countdown, e.g. 14:32. */
-					'held'    => __( 'Your items are held for %s', 'flash-sale-stock-guard-for-woocommerce' ),
-					'expired' => __( 'Your hold has expired. Please check your cart before continuing.', 'flash-sale-stock-guard-for-woocommerce' ),
+					'held'         => __( 'Your items are held for %s', 'flash-sale-stock-guard-for-woocommerce' ),
+					'expiredTitle' => __( 'Your reservation has expired', 'flash-sale-stock-guard-for-woocommerce' ),
+					'expiredBody'  => __( 'The items you were holding have been released for other shoppers. Please start again.', 'flash-sale-stock-guard-for-woocommerce' ),
+					'expiredCta'   => __( 'Back to shop', 'flash-sale-stock-guard-for-woocommerce' ),
 				),
 			)
 		);
+	}
+
+	/**
+	 * Where to send a customer whose hold has lapsed: the shop page, or the
+	 * site root if the store hasn't set one.
+	 *
+	 * @return string
+	 */
+	private function shop_url(): string {
+		$shop = wc_get_page_permalink( 'shop' );
+
+		return $shop ? $shop : home_url( '/' );
 	}
 
 	/**

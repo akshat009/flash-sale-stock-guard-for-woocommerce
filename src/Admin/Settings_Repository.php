@@ -71,6 +71,41 @@ class Settings_Repository {
 	public const OPT_DELETE_ON_UNINSTALL = 'fssgw_delete_data_on_uninstall';
 
 	/**
+	 * Expiry popup: button background colour, #rrggbb.
+	 *
+	 * @var string
+	 */
+	public const OPT_EXPIRY_BUTTON_BG = 'fssgw_expiry_button_bg';
+
+	/**
+	 * Expiry popup: button text colour, #rrggbb.
+	 *
+	 * @var string
+	 */
+	public const OPT_EXPIRY_BUTTON_COLOR = 'fssgw_expiry_button_color';
+
+	/**
+	 * Expiry popup: base text size in pixels.
+	 *
+	 * @var string
+	 */
+	public const OPT_EXPIRY_FONT_SIZE = 'fssgw_expiry_font_size';
+
+	/**
+	 * Expiry popup: card background colour, #rrggbb.
+	 *
+	 * @var string
+	 */
+	public const OPT_EXPIRY_BG_COLOR = 'fssgw_expiry_bg_color';
+
+	/**
+	 * Expiry popup: card text colour, #rrggbb.
+	 *
+	 * @var string
+	 */
+	public const OPT_EXPIRY_TEXT_COLOR = 'fssgw_expiry_text_color';
+
+	/**
 	 * Guard only products ticked in their Inventory tab.
 	 *
 	 * @var string
@@ -111,6 +146,55 @@ class Settings_Repository {
 	 * @var int
 	 */
 	private const MAX_MINUTES = 1440;
+
+	/**
+	 * Default expiry popup button background colour.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_EXPIRY_BUTTON_BG = '#720eec';
+
+	/**
+	 * Default expiry popup button text colour.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_EXPIRY_BUTTON_COLOR = '#ffffff';
+
+	/**
+	 * Default expiry popup card background colour.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_EXPIRY_BG_COLOR = '#ffffff';
+
+	/**
+	 * Default expiry popup card text colour.
+	 *
+	 * @var string
+	 */
+	public const DEFAULT_EXPIRY_TEXT_COLOR = '#1e1e1e';
+
+	/**
+	 * Default expiry popup text size, in pixels.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_EXPIRY_FONT_SIZE = 16;
+
+	/**
+	 * Smallest allowed popup text size, in pixels.
+	 *
+	 * @var int
+	 */
+	public const MIN_EXPIRY_FONT_SIZE = 10;
+
+	/**
+	 * Largest allowed popup text size, in pixels.
+	 *
+	 * @var int
+	 */
+	public const MAX_EXPIRY_FONT_SIZE = 32;
 
 	/**
 	 * Get the Settings API option group these options belong to.
@@ -200,6 +284,71 @@ class Settings_Repository {
 	}
 
 	/**
+	 * Expiry popup button background colour, #rrggbb.
+	 *
+	 * @return string
+	 */
+	public function get_expiry_button_bg(): string {
+		$value = (string) get_option( self::OPT_EXPIRY_BUTTON_BG, self::DEFAULT_EXPIRY_BUTTON_BG );
+
+		return $this->is_hex_color( $value ) ? $value : self::DEFAULT_EXPIRY_BUTTON_BG;
+	}
+
+	/**
+	 * Expiry popup button text colour, #rrggbb.
+	 *
+	 * @return string
+	 */
+	public function get_expiry_button_color(): string {
+		$value = (string) get_option( self::OPT_EXPIRY_BUTTON_COLOR, self::DEFAULT_EXPIRY_BUTTON_COLOR );
+
+		return $this->is_hex_color( $value ) ? $value : self::DEFAULT_EXPIRY_BUTTON_COLOR;
+	}
+
+	/**
+	 * Expiry popup base text size in pixels, clamped to the allowed range.
+	 *
+	 * @return int
+	 */
+	public function get_expiry_font_size(): int {
+		$value = (int) get_option( self::OPT_EXPIRY_FONT_SIZE, self::DEFAULT_EXPIRY_FONT_SIZE );
+
+		return max( self::MIN_EXPIRY_FONT_SIZE, min( self::MAX_EXPIRY_FONT_SIZE, $value ) );
+	}
+
+	/**
+	 * Expiry popup card background colour, #rrggbb.
+	 *
+	 * @return string
+	 */
+	public function get_expiry_bg_color(): string {
+		$value = (string) get_option( self::OPT_EXPIRY_BG_COLOR, self::DEFAULT_EXPIRY_BG_COLOR );
+
+		return $this->is_hex_color( $value ) ? $value : self::DEFAULT_EXPIRY_BG_COLOR;
+	}
+
+	/**
+	 * Expiry popup card text colour, #rrggbb.
+	 *
+	 * @return string
+	 */
+	public function get_expiry_text_color(): string {
+		$value = (string) get_option( self::OPT_EXPIRY_TEXT_COLOR, self::DEFAULT_EXPIRY_TEXT_COLOR );
+
+		return $this->is_hex_color( $value ) ? $value : self::DEFAULT_EXPIRY_TEXT_COLOR;
+	}
+
+	/**
+	 * Whether a string is a #rrggbb colour.
+	 *
+	 * @param string $value Candidate.
+	 * @return bool
+	 */
+	private function is_hex_color( string $value ): bool {
+		return 1 === preg_match( '/^#[0-9a-fA-F]{6}$/', $value );
+	}
+
+	/**
 	 * Register every option with the Settings API.
 	 *
 	 * @return void
@@ -264,6 +413,56 @@ class Settings_Repository {
 				'default'           => false,
 			)
 		);
+
+		register_setting(
+			self::OPTIONS_GROUP,
+			self::OPT_EXPIRY_BUTTON_BG,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_hex_color' ),
+				'default'           => self::DEFAULT_EXPIRY_BUTTON_BG,
+			)
+		);
+
+		register_setting(
+			self::OPTIONS_GROUP,
+			self::OPT_EXPIRY_BUTTON_COLOR,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_hex_color' ),
+				'default'           => self::DEFAULT_EXPIRY_BUTTON_COLOR,
+			)
+		);
+
+		register_setting(
+			self::OPTIONS_GROUP,
+			self::OPT_EXPIRY_FONT_SIZE,
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => array( $this, 'sanitize_font_size' ),
+				'default'           => self::DEFAULT_EXPIRY_FONT_SIZE,
+			)
+		);
+
+		register_setting(
+			self::OPTIONS_GROUP,
+			self::OPT_EXPIRY_BG_COLOR,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_hex_color' ),
+				'default'           => self::DEFAULT_EXPIRY_BG_COLOR,
+			)
+		);
+
+		register_setting(
+			self::OPTIONS_GROUP,
+			self::OPT_EXPIRY_TEXT_COLOR,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_hex_color' ),
+				'default'           => self::DEFAULT_EXPIRY_TEXT_COLOR,
+			)
+		);
 	}
 
 	/**
@@ -300,24 +499,54 @@ class Settings_Repository {
 	}
 
 	/**
+	 * Colour sanitiser — keep a valid #rrggbb, otherwise store '' and let the
+	 * getter substitute that field's own default. One callback serves both
+	 * colour options, so it can't pick the right default itself.
+	 *
+	 * @param mixed $value Raw value from the colour input.
+	 * @return string
+	 */
+	public function sanitize_hex_color( $value ): string {
+		$value = strtolower( trim( (string) $value ) );
+
+		return $this->is_hex_color( $value ) ? $value : '';
+	}
+
+	/**
+	 * Popup text size sanitiser — whole pixels, clamped to the allowed range.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return int
+	 */
+	public function sanitize_font_size( $value ): int {
+		return max( self::MIN_EXPIRY_FONT_SIZE, min( self::MAX_EXPIRY_FONT_SIZE, (int) $value ) );
+	}
+
+	/**
 	 * Minutes in, seconds out.
 	 *
-	 * Idempotent on purpose: WordPress can invoke a sanitize callback more
-	 * than once per request, and a naive minutes-to-seconds multiply would
-	 * then run twice, turning 15 minutes into 900. Anything above the
-	 * 1440-minute ceiling is therefore treated as already-seconds and clamped
-	 * rather than multiplied again.
+	 * WordPress can run a sanitize callback more than once for a single save —
+	 * the first save of an option sanitizes on both the update and the add
+	 * path. Only the first pass carries the form's minutes value, so the
+	 * converted result is cached in a request-scoped static and every later
+	 * pass returns that same figure instead of multiplying by sixty again
+	 * (which is what turned an entered "1" into 3600 seconds / "60 minutes").
+	 * One settings form means one hold duration per request, so a plain static
+	 * is safe here; it resets on the next request.
 	 *
 	 * @param mixed $value Raw value from the form.
 	 * @return int Seconds.
 	 */
 	public function sanitize_ttl( $value ): int {
-		$number = (int) $value;
+		static $seconds = null;
 
-		if ( $number > self::MAX_MINUTES ) {
-			return max( MINUTE_IN_SECONDS, min( self::MAX_MINUTES * MINUTE_IN_SECONDS, $number ) );
+		if ( null !== $seconds ) {
+			return $seconds;
 		}
 
-		return max( 1, min( self::MAX_MINUTES, $number ) ) * MINUTE_IN_SECONDS;
+		$minutes = max( 1, min( self::MAX_MINUTES, (int) $value ) );
+		$seconds = $minutes * MINUTE_IN_SECONDS;
+
+		return $seconds;
 	}
 }

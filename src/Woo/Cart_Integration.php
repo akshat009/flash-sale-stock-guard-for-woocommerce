@@ -46,6 +46,14 @@ class Cart_Integration implements Service_Provider {
 	 */
 	private array $emptying_contents = array();
 
+	/**
+	 * Guards against printing the shop-landing expiry banner more than once
+	 * when several theme hooks fire on the same request.
+	 *
+	 * @var bool
+	 */
+	private bool $expiry_banner_done = false;
+
 
 	/**
 	 * Bind the repository so other providers resolve the same instance.
@@ -73,6 +81,8 @@ class Cart_Integration implements Service_Provider {
 		add_action( 'woocommerce_before_cart_emptied', array( $this, 'on_before_cart_emptied' ) );
 		add_action( 'woocommerce_cart_emptied', array( $this, 'on_cart_emptied' ) );
 		add_action( 'woocommerce_check_cart_items', array( $this, 'on_check_cart_items' ) );
+		add_action( 'template_redirect', array( $this, 'on_expired_landing' ) );
+		add_action( 'wp_body_open', array( $this, 'render_expiry_banner' ) );
 		add_action( 'woocommerce_checkout_order_processed', array( $this, 'on_order_processed' ), 10, 3 );
 		add_action( 'woocommerce_order_status_changed', array( $this, 'on_order_status_changed' ), 10, 4 );
 
@@ -264,17 +274,95 @@ class Cart_Integration implements Service_Provider {
 	}
 
 	/**
-	 * Before payment, confirm every guarded line is still covered.
-	 *
-	 * A lapsed hold means the customer lost their place in the queue, not
-	 * that the item is gone — so try to re-acquire silently first, and only
-	 * remove the line if the stock really has been taken by someone else.
-	 * Showing an alarming error for what is usually a non-event is a good
-	 * way to lose a sale you'd already made.
+	 * Drop lapsed guarded lines whenever the customer is on or acting on their
+	 * cart. `woocommerce_check_cart_items` fires as the cart and checkout pages
+	 * render and again when an order is submitted (classic, AJAX and the Store
+	 * API all trigger it).
 	 *
 	 * @return void
 	 */
 	public function on_check_cart_items(): void {
+		$this->purge_lapsed_holds();
+	}
+
+	/**
+	 * Same purge when the customer lands back on the shop after the countdown
+	 * dialog sent them there (`?fssgw-expired=1`), so the mini-cart drops the
+	 * released item right away instead of only on the next cart view. No
+	 * per-line notice here — the dismissable banner (see render_expiry_banner)
+	 * carries the message on that page instead.
+	 *
+	 * @return void
+	 */
+	public function on_expired_landing(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence flag only; the purge is idempotent and acts solely on the caller's own cart against live hold state.
+		if ( empty( $_GET['fssgw-expired'] ) ) {
+			return;
+		}
+
+		$this->purge_lapsed_holds( false );
+	}
+
+	/**
+	 * A dismissable "reservation expired" bar for the page the countdown dialog
+	 * redirects to. WooCommerce's own notices can't be closed without reloading,
+	 * and the shop page isn't somewhere a customer expects to reload — so this
+	 * one has an explicit close button and doesn't come back.
+	 *
+	 * Hooked to `wp_body_open` (fired by every current theme, block or classic),
+	 * so it sits as a full-width bar at the top of the page. The flag keeps it
+	 * to one copy.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_banner(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence flag only, nothing is changed here.
+		if ( $this->expiry_banner_done || empty( $_GET['fssgw-expired'] ) ) {
+			return;
+		}
+
+		$this->expiry_banner_done = true;
+
+		$message = __( 'Your reservation expired — the held items have been released.', 'flash-sale-stock-guard-for-woocommerce' );
+		$dismiss = __( 'Dismiss', 'flash-sale-stock-guard-for-woocommerce' );
+		?>
+		<div id="fssgw-expiry-banner" role="status" style="position:relative;box-sizing:border-box;margin:0;padding:1em 3em;border-bottom:3px solid #720eec;background:#f6f5f8;color:#1e1e1e;font-size:1em;line-height:1.5;text-align:center;">
+			<?php echo esc_html( $message ); ?>
+			<button type="button" id="fssgw-expiry-banner-close" aria-label="<?php echo esc_attr( $dismiss ); ?>" style="position:absolute;top:50%;right:.6em;transform:translateY(-50%);border:0;background:transparent;color:inherit;font-size:1.5em;line-height:1;cursor:pointer;">&times;</button>
+		</div>
+		<script>
+		( function () {
+			var banner = document.getElementById( 'fssgw-expiry-banner' );
+			var close = document.getElementById( 'fssgw-expiry-banner-close' );
+
+			if ( banner && close ) {
+				close.addEventListener( 'click', function () {
+					banner.parentNode.removeChild( banner );
+				} );
+			}
+		} )();
+		</script>
+		<?php
+	}
+
+	/**
+	 * Remove every guarded cart line that no longer has an active hold covering
+	 * it, leaving a notice in its place.
+	 *
+	 * A hold that has run out means the customer's reserved window closed — the
+	 * countdown told them so — so the item leaves the cart rather than silently
+	 * reverting to unguarded stock they could still lose at payment. Only their
+	 * own cart is touched, and only on a real request they made, so this never
+	 * mutates a session out from under anyone. Re-acquiring the hold here
+	 * instead was tried and dropped: it fires on plain page views, which kept
+	 * abandoned carts held forever and restarted the countdown on every reload.
+	 *
+	 * @param bool $notify Whether to leave a WooCommerce notice per removed line.
+	 *                     The shop-landing path passes false and shows its own
+	 *                     dismissable banner instead.
+	 * @return void
+	 */
+	private function purge_lapsed_holds( bool $notify = true ): void {
 		if ( ! $this->has_cart() ) {
 			return;
 		}
@@ -301,29 +389,18 @@ class Cart_Integration implements Service_Provider {
 				continue;
 			}
 
-			$result = $this->repository->reserve(
-				$product_id,
-				$variation_id,
-				$quantity,
-				$session_id,
-				$user_id,
-				$this->get_ttl_seconds( $product_id, $variation_id )
-			);
-
-			if ( ! is_wp_error( $result ) ) {
-				continue;
-			}
-
 			WC()->cart->remove_cart_item( $cart_item_key );
 
-			wc_add_notice(
-				sprintf(
-					/* translators: %s: product name. */
-					__( '"%s" is no longer available and has been removed from your cart.', 'flash-sale-stock-guard-for-woocommerce' ),
-					$product->get_name()
-				),
-				'error'
-			);
+			if ( $notify ) {
+				wc_add_notice(
+					sprintf(
+						/* translators: %s: product name. */
+						__( 'Your hold on “%s” expired, so it was removed from your cart.', 'flash-sale-stock-guard-for-woocommerce' ),
+						$product->get_name()
+					),
+					'notice'
+				);
+			}
 		}
 	}
 

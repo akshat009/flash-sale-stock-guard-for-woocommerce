@@ -102,27 +102,13 @@ class Rest_Controller implements Service_Provider {
 			return new \WP_REST_Response( array( 'active' => false ), 200 );
 		}
 
-		// WooCommerce doesn't boot the session for arbitrary REST routes. Only
-		// the session is needed here — deliberately not wc_load_cart(), which
-		// also constructs WC()->cart. That cart loads its contents on the
-		// `wp_loaded` hook, already past by the time a REST route runs, so it
-		// stays empty — and WooCommerce then "cleans up" what looks like an
-		// abandoned cart by deleting the visitor's real session and cart
-		// cookies out from under them.
-		if ( ! WC()->session ) {
-			if ( ! class_exists( 'WC_Session_Handler' ) ) {
-				return new \WP_REST_Response( array( 'active' => false ), 200 );
-			}
+		$session_id = $this->resolve_session_id();
 
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce's own filter, not one of ours.
-			$session_class = apply_filters( 'woocommerce_session_handler', 'WC_Session_Handler' );
-			WC()->session  = new $session_class();
-			WC()->session->init();
+		if ( '' === $session_id ) {
+			return new \WP_REST_Response( array( 'active' => false ), 200 );
 		}
 
-		$seconds = $this->repository->get_seconds_remaining(
-			(string) WC()->session->get_customer_id()
-		);
+		$seconds = $this->repository->get_seconds_remaining( $session_id );
 
 		if ( null === $seconds ) {
 			return new \WP_REST_Response( array( 'active' => false ), 200 );
@@ -135,5 +121,60 @@ class Rest_Controller implements Service_Provider {
 			),
 			200
 		);
+	}
+
+	/**
+	 * The cart identity the hold rows are keyed on.
+	 *
+	 * The countdown request runs without a nonce (see Hold_Repository), so
+	 * WordPress has already reset it to user 0 by the time this runs.
+	 *
+	 * For a logged-in customer the hold is stored under their numeric user ID.
+	 * wp_validate_auth_cookie() re-reads and cryptographically checks the login
+	 * cookie, so it can't be forged, and it hands back that ID even on this
+	 * nominally unauthenticated request. Doing it this way keeps
+	 * WC_Session_Handler out of the picture for them entirely: an
+	 * unauthenticated init() treats the logged-in session cookie as a stale
+	 * logged-out one, calls destroy_session() — which runs wc_empty_cart() —
+	 * and returns a throwaway guest hash. That emptied the customer's cart on
+	 * every 30-second poll and never matched a hold.
+	 *
+	 * A guest only ever has the WooCommerce session cookie, and its `t_` id
+	 * passes that same validity check, so booting the handler is safe there. A
+	 * non-guest id we couldn't authenticate above is a logged-in customer with
+	 * an expired login cookie — bail rather than let init() destroy it.
+	 *
+	 * @return string Session id, or '' when it can't be resolved.
+	 */
+	private function resolve_session_id(): string {
+		$user_id = wp_validate_auth_cookie( '', 'logged_in' );
+
+		if ( $user_id ) {
+			return (string) $user_id;
+		}
+
+		$cookie_name = 'wp_woocommerce_session_' . COOKIEHASH;
+
+		if ( ! empty( $_COOKIE[ $cookie_name ] ) ) {
+			$raw = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
+			$id  = explode( '|', str_replace( '||', '|', $raw ) )[0];
+
+			if ( '' !== $id && 0 !== strpos( $id, 't_' ) ) {
+				return '';
+			}
+		}
+
+		if ( ! WC()->session ) {
+			if ( ! class_exists( 'WC_Session_Handler' ) ) {
+				return '';
+			}
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce's own filter, not one of ours.
+			$session_class = apply_filters( 'woocommerce_session_handler', 'WC_Session_Handler' );
+			WC()->session  = new $session_class();
+			WC()->session->init();
+		}
+
+		return (string) WC()->session->get_customer_id();
 	}
 }
