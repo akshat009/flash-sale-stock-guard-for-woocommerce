@@ -11,7 +11,6 @@
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       flash-sale-stock-guard-for-woocommerce
- * Domain Path:       /languages
  * Requires Plugins: woocommerce
  *
  * @package FlashSaleStockGuardWooCommerce
@@ -84,7 +83,9 @@ add_action(
  * @return void
  */
 function fssgw_boot() {
-	load_plugin_textdomain( 'flash-sale-stock-guard-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	// No load_plugin_textdomain() call: WordPress.org auto-loads translations
+	// for hosted plugins by text domain since 4.6, and manually calling it is
+	// now flagged as discouraged.
 	\FlashSaleStockGuardWooCommerce\Plugin::create()->boot();
 }
 

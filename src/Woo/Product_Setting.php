@@ -205,8 +205,10 @@ class Product_Setting implements Service_Provider {
 	 * @return void
 	 */
 	public function save_variation_field( $variation_id, $loop ): void {
-		// Nonce is verified by WooCommerce before this hook fires.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// Nonce is verified by WooCommerce before this hook fires. The posted
+		// value itself is never used beyond an isset() presence check below,
+		// so there's nothing to sanitize.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$posted = isset( $_POST[ self::META_KEY ] ) && is_array( $_POST[ self::META_KEY ] ) ? wp_unslash( $_POST[ self::META_KEY ] ) : array();
 
 		$value = isset( $posted[ $loop ] ) ? 'yes' : 'no';
