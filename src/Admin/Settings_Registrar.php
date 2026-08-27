@@ -39,6 +39,13 @@ class Settings_Registrar implements Service_Provider {
 	private const SECTION = 'fssgw_main_section';
 
 	/**
+	 * Expiry popup appearance section identifier.
+	 *
+	 * @var string
+	 */
+	private const SECTION_POPUP = 'fssgw_popup_section';
+
+	/**
 	 * Application container, kept for on-demand Settings_Repository lookups
 	 * from inside WordPress-invoked callbacks (add_submenu_page() and
 	 * add_settings_field() call these with fixed signatures, so the
@@ -143,6 +150,53 @@ class Settings_Registrar implements Service_Provider {
 			self::PAGE_SLUG,
 			self::SECTION
 		);
+
+		add_settings_section(
+			self::SECTION_POPUP,
+			__( 'Expiry popup', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_popup_section_intro' ),
+			self::PAGE_SLUG
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_EXPIRY_BG_COLOR,
+			__( 'Popup background', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_expiry_bg_color_field' ),
+			self::PAGE_SLUG,
+			self::SECTION_POPUP
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_EXPIRY_TEXT_COLOR,
+			__( 'Popup text colour', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_expiry_text_color_field' ),
+			self::PAGE_SLUG,
+			self::SECTION_POPUP
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_EXPIRY_BUTTON_BG,
+			__( 'Button colour', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_expiry_button_bg_field' ),
+			self::PAGE_SLUG,
+			self::SECTION_POPUP
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_EXPIRY_BUTTON_COLOR,
+			__( 'Button text colour', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_expiry_button_color_field' ),
+			self::PAGE_SLUG,
+			self::SECTION_POPUP
+		);
+
+		add_settings_field(
+			Settings_Repository::OPT_EXPIRY_FONT_SIZE,
+			__( 'Text size', 'flash-sale-stock-guard-for-woocommerce' ),
+			array( $this, 'render_expiry_font_size_field' ),
+			self::PAGE_SLUG,
+			self::SECTION_POPUP
+		);
 	}
 
 	/**
@@ -222,6 +276,83 @@ class Settings_Registrar implements Service_Provider {
 		$description = '';
 
 		include FSSGW_PATH . 'src/Admin/views/checkbox-field.php';
+	}
+
+	/**
+	 * Render the expiry popup section intro.
+	 *
+	 * @return void
+	 */
+	public function render_popup_section_intro() {
+		echo '<p>' . esc_html__( 'Style the "reservation expired" popup customers see when the countdown runs out. Wording is fixed; only appearance changes here.', 'flash-sale-stock-guard-for-woocommerce' ) . '</p>';
+	}
+
+	/**
+	 * Render the popup card background colour field.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_bg_color_field() {
+		$name        = Settings_Repository::OPT_EXPIRY_BG_COLOR;
+		$value       = $this->container->get( Settings_Repository::class )->get_expiry_bg_color();
+		$description = '';
+
+		include FSSGW_PATH . 'src/Admin/views/color-field.php';
+	}
+
+	/**
+	 * Render the popup card text colour field.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_text_color_field() {
+		$name        = Settings_Repository::OPT_EXPIRY_TEXT_COLOR;
+		$value       = $this->container->get( Settings_Repository::class )->get_expiry_text_color();
+		$description = '';
+
+		include FSSGW_PATH . 'src/Admin/views/color-field.php';
+	}
+
+	/**
+	 * Render the popup button background colour field.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_button_bg_field() {
+		$name        = Settings_Repository::OPT_EXPIRY_BUTTON_BG;
+		$value       = $this->container->get( Settings_Repository::class )->get_expiry_button_bg();
+		$description = '';
+
+		include FSSGW_PATH . 'src/Admin/views/color-field.php';
+	}
+
+	/**
+	 * Render the popup button text colour field.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_button_color_field() {
+		$name        = Settings_Repository::OPT_EXPIRY_BUTTON_COLOR;
+		$value       = $this->container->get( Settings_Repository::class )->get_expiry_button_color();
+		$description = '';
+
+		include FSSGW_PATH . 'src/Admin/views/color-field.php';
+	}
+
+	/**
+	 * Render the popup text size field.
+	 *
+	 * @return void
+	 */
+	public function render_expiry_font_size_field() {
+		$name        = Settings_Repository::OPT_EXPIRY_FONT_SIZE;
+		$value       = $this->container->get( Settings_Repository::class )->get_expiry_font_size();
+		$min         = Settings_Repository::MIN_EXPIRY_FONT_SIZE;
+		$max         = Settings_Repository::MAX_EXPIRY_FONT_SIZE;
+		$suffix      = __( 'px', 'flash-sale-stock-guard-for-woocommerce' );
+		$description = __( 'Base text size for the popup. Heading and button scale from this.', 'flash-sale-stock-guard-for-woocommerce' );
+
+		include FSSGW_PATH . 'src/Admin/views/number-field.php';
 	}
 
 	/**

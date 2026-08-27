@@ -1,9 +1,13 @@
 vendor/
 node_modules/
 assets/build/
+test-results/
+playwright-report/
+artifacts/
 .phpunit.cache
 .phpunit.result.cache
 *.log
 .DS_Store
 Thumbs.db
 /*.zip
+package-lock.json
