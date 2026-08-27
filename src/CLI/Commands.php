@@ -42,7 +42,6 @@ class Commands implements Service_Provider {
 	 */
 	public function boot( Container $container ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		\WP_CLI::add_command( 'fssgw status', array( $this, 'status' ) );
-		\WP_CLI::add_command( 'fssgw cache clear', array( $this, 'cache_clear' ) );
 	}
 
 	/**
@@ -61,25 +60,5 @@ class Commands implements Service_Provider {
 		$cache_backend = wp_using_ext_object_cache() ? 'External Object Cache' : 'Transient / Database Cache';
 
 		\WP_CLI::success( sprintf( 'Flash Sale Stock Guard for WooCommerce Version: %s | Cache Backend: %s', $version, $cache_backend ) );
-	}
-
-	/**
-	 * Clears plugin cache.
-	 *
-	 * ## EXAMPLES
-	 *
-	 *     wp fssgw cache clear
-	 *
-	 * @param array $args       Command positional arguments.
-	 * @param array $assoc_args Command associative arguments.
-	 * @return void
-	 */
-	public function cache_clear( $args = array(), $assoc_args = array() ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
-		if ( function_exists( 'wp_cache_flush_group' ) ) {
-			wp_cache_flush_group( 'fssgw' );
-		} else {
-			delete_transient( 'fssgw_elementor_widgets' );
-		}
-		\WP_CLI::success( __( 'Plugin cache cleared successfully.', 'flash-sale-stock-guard-for-woocommerce' ) );
 	}
 }

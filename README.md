@@ -27,15 +27,8 @@ This plugin uses a modular composition root: `Plugin::create()` builds a `FlashS
 - A provider can optionally implement `FlashSaleStockGuardWooCommerce\Contracts\Conditional` to self-exclude (e.g. only run when a required plugin is active).
 - Additional providers can be injected without modifying core files using the `fssgw_providers` WordPress filter.
 
-## Elementor Widgets Convention
-Concrete widget classes placed in `src/Widgets/` are automatically discovered:
-- **Class Extension**: Custom widgets extend `\Elementor\Widget_Base` directly.
-- **Naming & Asset Handles**: Underscores in class names convert to hyphens (e.g. `Sample_Widget` in `src/Widgets/Sample_Widget.php` maps to handle `fssgw-sample-widget`).
-- **Asset Auto-Discovery**: If `assets/css/widgets/sample-widget.css` or `assets/js/widgets/sample-widget.js` exist, they are auto-registered for elementor on-demand enqueueing.
-
 ## WP-CLI Commands
 - `wp fssgw status` — Display plugin version and cache backend.
-- `wp fssgw cache clear` — Clear plugin cache.
 
 ## Development Scripts
 - `composer lint` — Run PHPCS checks against WordPress Coding Standards.
