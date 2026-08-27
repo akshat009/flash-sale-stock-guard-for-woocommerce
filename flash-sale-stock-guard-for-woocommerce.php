@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Flash Sale Stock Guard for WooCommerce
- * Plugin URI:        https://github.com/akshat009
+ * Plugin URI:        https://github.com/akshat009/flash-sale-stock-guard-for-woocommerce
  * Description:       Stop overselling during flash sales and limited drops. Locks stock at add-to-cart on the products you choose, with an optional countdown.
  * Version:           1.0.0
  * Requires at least: 6.4
