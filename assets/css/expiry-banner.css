@@ -1,0 +1,30 @@
+/**
+ * "Reservation expired" banner shown on the shop-landing page the countdown
+ * dialog redirects to. Loaded only on that request (?fssgw-expired=1).
+ */
+
+.fssgw-expiry-banner {
+	position: relative;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 1em 3em;
+	border-bottom: 3px solid #720eec;
+	background: #f6f5f8;
+	color: #1e1e1e;
+	font-size: 1em;
+	line-height: 1.5;
+	text-align: center;
+}
+
+.fssgw-expiry-banner__close {
+	position: absolute;
+	top: 50%;
+	right: .6em;
+	transform: translateY( -50% );
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font-size: 1.5em;
+	line-height: 1;
+	cursor: pointer;
+}

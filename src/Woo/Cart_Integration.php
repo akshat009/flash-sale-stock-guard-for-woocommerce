@@ -82,6 +82,7 @@ class Cart_Integration implements Service_Provider {
 		add_action( 'woocommerce_cart_emptied', array( $this, 'on_cart_emptied' ) );
 		add_action( 'woocommerce_check_cart_items', array( $this, 'on_check_cart_items' ) );
 		add_action( 'template_redirect', array( $this, 'on_expired_landing' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_expiry_assets' ) );
 		add_action( 'wp_body_open', array( $this, 'render_expiry_banner' ) );
 		add_action( 'woocommerce_checkout_order_processed', array( $this, 'on_order_processed' ), 10, 3 );
 		add_action( 'woocommerce_order_status_changed', array( $this, 'on_order_status_changed' ), 10, 4 );
@@ -325,24 +326,44 @@ class Cart_Integration implements Service_Provider {
 
 		$message = __( 'Your reservation expired — the held items have been released.', 'flash-sale-stock-guard-for-woocommerce' );
 		$dismiss = __( 'Dismiss', 'flash-sale-stock-guard-for-woocommerce' );
-		?>
-		<div id="fssgw-expiry-banner" role="status" style="position:relative;box-sizing:border-box;margin:0;padding:1em 3em;border-bottom:3px solid #720eec;background:#f6f5f8;color:#1e1e1e;font-size:1em;line-height:1.5;text-align:center;">
-			<?php echo esc_html( $message ); ?>
-			<button type="button" id="fssgw-expiry-banner-close" aria-label="<?php echo esc_attr( $dismiss ); ?>" style="position:absolute;top:50%;right:.6em;transform:translateY(-50%);border:0;background:transparent;color:inherit;font-size:1.5em;line-height:1;cursor:pointer;">&times;</button>
-		</div>
-		<script>
-		( function () {
-			var banner = document.getElementById( 'fssgw-expiry-banner' );
-			var close = document.getElementById( 'fssgw-expiry-banner-close' );
 
-			if ( banner && close ) {
-				close.addEventListener( 'click', function () {
-					banner.parentNode.removeChild( banner );
-				} );
-			}
-		} )();
-		</script>
+		// Styling and the dismiss handler live in assets/css|js/expiry-banner.*,
+		// enqueued by enqueue_expiry_assets() on this same request.
+		?>
+		<div id="fssgw-expiry-banner" class="fssgw-expiry-banner" role="status">
+			<?php echo esc_html( $message ); ?>
+			<button type="button" id="fssgw-expiry-banner-close" class="fssgw-expiry-banner__close" aria-label="<?php echo esc_attr( $dismiss ); ?>">&times;</button>
+		</div>
 		<?php
+	}
+
+	/**
+	 * Enqueue the expiry-banner stylesheet and dismiss script, but only on the
+	 * shop-landing request the countdown dialog redirects to
+	 * (`?fssgw-expired=1`) — the banner is rendered nowhere else.
+	 *
+	 * @return void
+	 */
+	public function enqueue_expiry_assets(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence flag only, nothing is read from the value and nothing is changed.
+		if ( empty( $_GET['fssgw-expired'] ) ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'fssgw-expiry-banner',
+			FSSGW_URL . 'assets/css/expiry-banner.css',
+			array(),
+			FSSGW_VERSION
+		);
+
+		wp_enqueue_script(
+			'fssgw-expiry-banner',
+			FSSGW_URL . 'assets/js/expiry-banner.js',
+			array(),
+			FSSGW_VERSION,
+			true
+		);
 	}
 
 	/**
