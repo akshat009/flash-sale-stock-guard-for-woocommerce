@@ -13,6 +13,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify tag matches readme.txt Stable tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          STABLE_TAG=$(grep -m1 "^Stable tag:" readme.txt | sed -E 's/^Stable tag:[[:space:]]*//')
+          echo "Git tag: $TAG_VERSION | readme.txt Stable tag: $STABLE_TAG"
+          if [ "$TAG_VERSION" != "$STABLE_TAG" ]; then
+            echo "::error::Git tag ($GITHUB_REF_NAME) does not match readme.txt's Stable tag ($STABLE_TAG). Bump Stable tag and commit before tagging a release. Aborting."
+            exit 1
+          fi
+
       # No JS build step here: assets/css and assets/js are hand-written,
       # not bundled from a src/ directory, so there's nothing to build.
 
