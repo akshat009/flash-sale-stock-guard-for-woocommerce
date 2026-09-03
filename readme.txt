@@ -1,6 +1,6 @@
 === Flash Sale Stock Guard for WooCommerce ===
 Contributors: developerakshat
-Tags: woocommerce, flash sale, stock management, prevent overselling, countdown timer
+Tags: woocommerce, flash sale, stock management, prevent overselling, stock reservation
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
