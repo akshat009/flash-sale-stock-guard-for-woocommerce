@@ -1,4 +1,4 @@
-# Flash Sale Stock Guard for WooCommerce
+# Flash Sale Stock Guard for WooCommerce – Stock Reservation & Prevent Overselling
 
 Stop overselling during flash sales and limited drops. Locks stock at add-to-cart on the products you choose, with an optional countdown.
 
@@ -129,3 +129,11 @@ add_action( 'fssgw_holds_expired', function ( $expired_count ) {
 - `npm run build` — Build JS assets for production.
 - `npm run start` — Start JS asset dev server in watch mode.
 - `npm run test:e2e` — Run Playwright E2E tests against a running WordPress site (`WP_BASE_URL`, defaults to `http://localhost:8889` — e.g. `wp-env start`). See [tests/e2e/README.md](tests/e2e/README.md) for setup and how to add specs.
+
+## Other Plugins by Me
+
+Check out my other free plugins on the WordPress Plugin Directory:
+
+* **[Quovex Blocks](https://wordpress.org/plugins/quovex-blocks/)** — Modern Gutenberg blocks: filterable Query Grid, Post Carousel, Magazine Content Showcase & Announcement Banner.
+* **[Story Video Block](https://wordpress.org/plugins/story-video-block/)** — Fast video player, YouTube/Vimeo embed & video testimonials for Gutenberg with click-to-play lazy loading.
+* **[Multimage – Multiple Image & Photo Upload for WPForms](https://wordpress.org/plugins/multimage-image-uploads-for-wpforms/)** — Add multiple image and photo uploads to WPForms Lite with instant AJAX uploads.
