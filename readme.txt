@@ -1,6 +1,6 @@
-=== Flash Sale Stock Guard for WooCommerce ===
+=== Flash Sale Stock Guard for WooCommerce – Stock Reservation & Prevent Overselling ===
 Contributors: developerakshat
-Tags: woocommerce, flash sale, stock management, prevent overselling, stock reservation
+Tags: woocommerce, inventory, stock management, stock reservation, flash sale
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
@@ -49,7 +49,13 @@ Stock holds like this are usually locked behind premium inventory or checkout ad
 * `fssgw_holds_expired` action — fires after each cron expiry sweep, for logging or metrics.
 * WP-CLI: `wp fssgw status`.
 
-See the plugin's [GitHub README](https://github.com/akshat009/flash-sale-stock-guard-for-woocommerce#filters--actions) for parameters and code examples for each hook.
+= Check Out My Other Plugins =
+
+If you find Flash Sale Stock Guard helpful, feel free to check out my other free WordPress plugins:
+
+* [Quovex Blocks](https://wordpress.org/plugins/quovex-blocks/) — Modern Gutenberg blocks: filterable Query Grid, Post Carousel, Magazine Content Showcase & Announcement Banner.
+* [Story Video Block](https://wordpress.org/plugins/story-video-block/) — Fast video player, YouTube/Vimeo embed & video testimonials for Gutenberg with click-to-play lazy loading.
+* [Multimage – Multiple Image & Photo Upload for WPForms](https://wordpress.org/plugins/multimage-image-uploads-for-wpforms/) — Add multiple image and photo uploads to WPForms Lite with instant AJAX uploads.
 
 == Installation ==
 
