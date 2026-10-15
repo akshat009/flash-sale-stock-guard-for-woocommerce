@@ -1,0 +1,31 @@
+# Banners, icons, screenshots and readme.txt live in SVN's assets/ folder,
+# which sits beside trunk/ and tags/ rather than inside them -- none of it
+# is part of a release or the downloadable zip. So it doesn't need a version
+# bump to change: this pushes those files to WordPress.org on every commit
+# to master, while deploy.yml stays responsible for actual releases.
+name: Update WordPress.org assets
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".wordpress-org/**"
+      - "readme.txt"
+  workflow_dispatch:
+
+jobs:
+  assets:
+    name: Sync assets and readme
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update plugin assets
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          ASSETS_DIR: .wordpress-org
+          IGNORE_OTHER_FILES: true
